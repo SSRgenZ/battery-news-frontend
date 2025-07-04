@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Battery & Energy News</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+  <div class="max-w-6xl mx-auto py-8 px-4">
+    <h1 class="text-3xl font-bold mb-6">🔋 Battery & Energy News</h1>
+
+    <div id="categories" class="mb-4">
+      <!-- Category buttons will be generated here -->
+    </div>
+
+    <div id="news" class="grid gap-4"></div>
+  </div>
+
+  <script>
+    const apiUrl = "http://192.168.29.223:5000/news"; // change if IP differs
+    let allNews = [];
+
+    async function loadNews() {
+      try {
+        const res = await fetch(apiUrl);
+        const data = await res.json();
+
+        // Re-categorize 'General' as 'Others'
+        allNews = data.map(article => ({
+          ...article,
+          category: article.category === 'General' ? 'Others' : article.category
+        }));
+
+        renderCategories();
+        renderNews();
+      } catch (err) {
+        document.getElementById("news").innerHTML =
+          `<p class='text-red-500'>❌ Failed to load news: ${err}</p>`;
+      }
+    }
+
+    function renderCategories() {
+      const categories = [...new Set(allNews.map(n => n.category))];
+      const container = document.getElementById("categories");
+      container.innerHTML = `<button class="bg-blue-500 text-white px-3 py-1 rounded mr-2 mb-2" onclick="renderNews('All')">All</button>` +
+        categories.map(cat => `
+          <button class="bg-gray-300 hover:bg-gray-400 text-black px-3 py-1 rounded mr-2 mb-2" onclick="renderNews('${cat}')">${cat}</button>
+        `).join("");
+    }
+
+    function renderNews(filter = 'All') {
+      const mainContainer = document.getElementById("news");
+      let filtered = [];
+
+      if (filter === 'All') {
+        filtered = allNews;
+      } else {
+        filtered = allNews.filter(n => n.category === filter);
+      }
+
+      mainContainer.innerHTML = filtered.map(news => `
+        <div class="bg-white shadow-md rounded p-4">
+          <h2 class="text-xl font-semibold mb-2">${news.title}</h2>
+          <p class="text-sm text-gray-600 mb-1">${news.source || 'Unknown'} | ${news.category} | ${news.published}</p>
+          <a href="${news.link}" class="text-blue-500 hover:underline" target="_blank">Read more</a>
+        </div>
+      `).join("");
+    }
+
+    loadNews();
+  </script>
+</body>
+</html>
